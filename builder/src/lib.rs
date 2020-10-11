@@ -37,6 +37,29 @@ pub fn derive(input: TokenStream) -> TokenStream {
             self.current_dir = Some(current_dir);
             self
         }
+        fn build(self) -> Result<#id, Box<dyn Error>> {
+            if self.executable.is_none() ||
+               self.args.is_none() ||
+               self.env.is_none() ||
+               self.current_dir.is_none() {
+                return Err(Box::new(String::from("foo")));
+            };
+            Ok(
+                #id {
+                    executable: self.executable.unwrap(),
+                    args: self.args.unwrap(),
+                    env: self.env.unwrap(),
+                    current_dir: self.current_dir.unwrap(),
+            })
+        }
+    }
+    trait Error {}
+    impl Error for String {}
+    use std::fmt;
+    impl std::fmt::Debug for dyn Error {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.debug_struct("#id").finish()
+        }
     }
 
     pub struct #builderid {
