@@ -37,7 +37,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
             self.current_dir = Some(current_dir);
             self
         }
-        fn build(self) -> Result<#id, Box<dyn Error>> {
+        fn build(&mut self) -> Result<#id, Box<dyn Error>> {
             if self.executable.is_none() ||
                self.args.is_none() ||
                self.env.is_none() ||
@@ -46,10 +46,10 @@ pub fn derive(input: TokenStream) -> TokenStream {
             };
             Ok(
                 #id {
-                    executable: self.executable.unwrap(),
-                    args: self.args.unwrap(),
-                    env: self.env.unwrap(),
-                    current_dir: self.current_dir.unwrap(),
+                    executable: self.executable.as_ref().unwrap().clone(),
+                    args: self.args.as_ref().unwrap().clone(),
+                    env: self.env.as_ref().unwrap().clone(),
+                    current_dir: self.current_dir.as_ref().unwrap().clone(),
             })
         }
     }
