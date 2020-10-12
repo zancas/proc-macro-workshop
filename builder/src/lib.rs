@@ -1,14 +1,17 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use syn::{parse_macro_input, DeriveInput};
+use syn::{parse_macro_input, punctuated, DeriveInput, Token};
 
 #[proc_macro_derive(Builder)]
-pub fn _x(input: TokenStream) -> TokenStream {
+pub fn xx(input: TokenStream) -> TokenStream {
+    // Input section
+    let tokens = input.clone();
     let ast = parse_macro_input!(input as DeriveInput);
     let id = ast.ident;
     use quote::{format_ident, quote};
     let builderid = format_ident!("{}Builder", &id);
+
     quote!(
     impl #id {
         fn builder() -> #builderid {
