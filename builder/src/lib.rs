@@ -1,10 +1,29 @@
 use proc_macro::TokenStream;
-use syn::{parse_macro_input, punctuated, DeriveInput, Token};
+use syn::{parse_macro_input, DeriveInput};
+
+use syn::visit_mut::VisitMut;
+struct AddOption;
+impl VisitMut for AddOption {
+    fn visit_data_enum_mut(&mut self, node: &mut syn::DataEnum) {
+        let syn::DataEnum {
+            enum_token,
+            brace_token,
+            variants,
+        } = &node;
+        {
+            dbg!(enum_token.span);
+            dbg!(brace_token.span);
+            for t in variants {
+                dbg!(&t.ident);
+            }
+        };
+    }
+}
 
 #[proc_macro_derive(Builder)]
 pub fn xx(input: TokenStream) -> TokenStream {
     // Input section
-    let tokens = input.clone();
+    //let tokens = input.clone();
     let ast = parse_macro_input!(input as DeriveInput);
     let id = ast.ident;
     use quote::{format_ident, quote};
