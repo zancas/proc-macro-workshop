@@ -1,16 +1,29 @@
 use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput};
 
+use std::vec::Vec;
 use syn::visit_mut::{self, VisitMut};
-struct AddOption;
+struct AddOption {
+    mandatory: Vec<String>,
+    optional: Vec<String>,
+}
+impl AddOption {
+    pub fn new() -> Self {
+        AddOption {
+            mandatory: vec![],
+            optional: vec![],
+        }
+    }
+}
 impl VisitMut for AddOption {
     fn visit_field_mut(&mut self, node: &mut syn::Field) {
+        let field_method_name = node.ident.as_ref().unwrap().to_string();
         if let syn::Type::Path(tp) = &node.ty {
             let syn::TypePath { path, .. } = tp;
             let syn::Path { segments, .. } = path;
             for s in segments {
                 if s.ident == "Option" {
-                    dbg!("woot");
+                    self.optional.push(field_method_name);
                 }
             }
         }
@@ -24,7 +37,8 @@ pub fn xx(input: TokenStream) -> TokenStream {
     //let tokens = input.clone();
     let mut derive_input_ast = parse_macro_input!(input as DeriveInput);
     //dbg!(&derive_input_ast);
-    AddOption.visit_derive_input_mut(&mut derive_input_ast);
+    let mut ao = AddOption::new();
+    ao.visit_derive_input_mut(&mut derive_input_ast);
     let id = derive_input_ast.ident;
     use quote::{format_ident, quote};
     let builderid = format_ident!("{}Builder", &id);
