@@ -1,22 +1,20 @@
 use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput};
 
-use syn::visit_mut::VisitMut;
+use syn::visit_mut::{self, VisitMut};
 struct AddOption;
 impl VisitMut for AddOption {
-    fn visit_data_enum_mut(&mut self, node: &mut syn::DataEnum) {
-        let syn::DataEnum {
-            enum_token,
-            brace_token,
-            variants,
-        } = &node;
-        {
-            dbg!(enum_token.span);
-            dbg!(brace_token.span);
-            for t in variants {
-                dbg!(&t.ident);
+    fn visit_field_mut(&mut self, node: &mut syn::Field) {
+        if let syn::Type::Path(tp) = &node.ty {
+            let syn::TypePath { path, .. } = tp;
+            let syn::Path { segments, .. } = path;
+            for s in segments {
+                if s.ident == "Option" {
+                    dbg!("woot");
+                }
             }
-        };
+        }
+        visit_mut::visit_field_mut(self, node);
     }
 }
 
@@ -24,8 +22,10 @@ impl VisitMut for AddOption {
 pub fn xx(input: TokenStream) -> TokenStream {
     // Input section
     //let tokens = input.clone();
-    let ast = parse_macro_input!(input as DeriveInput);
-    let id = ast.ident;
+    let mut derive_input_ast = parse_macro_input!(input as DeriveInput);
+    //dbg!(&derive_input_ast);
+    AddOption.visit_derive_input_mut(&mut derive_input_ast);
+    let id = derive_input_ast.ident;
     use quote::{format_ident, quote};
     let builderid = format_ident!("{}Builder", &id);
 
