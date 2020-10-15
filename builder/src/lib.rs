@@ -3,9 +3,11 @@ use syn::{parse_macro_input, DeriveInput};
 
 use std::vec::Vec;
 use syn::visit_mut::{self, VisitMut};
-struct AddOption {
-    mandatory: Vec<String>,
-    optional: Vec<String>,
+
+#[derive(Debug)]
+pub(crate) struct AddOption {
+    pub(crate) mandatory: Vec<String>,
+    pub(crate) optional: Vec<String>,
 }
 impl AddOption {
     pub fn new() -> Self {
@@ -46,8 +48,11 @@ pub fn xx(input: TokenStream) -> TokenStream {
     //dbg!(&derive_input_ast);
     let mut ao = AddOption::new();
     ao.visit_derive_input_mut(&mut derive_input_ast);
-    let id = derive_input_ast.ident;
     use quote::{format_ident, quote};
+    for mandatory_method in ao.mandatory {
+        quote!(self.#mandatory_method.is_none());
+    }
+    let id = derive_input_ast.ident;
     let builderid = format_ident!("{}Builder", &id);
 
     quote!(
