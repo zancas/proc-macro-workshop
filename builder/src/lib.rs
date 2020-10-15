@@ -21,10 +21,17 @@ impl VisitMut for AddOption {
         if let syn::Type::Path(tp) = &node.ty {
             let syn::TypePath { path, .. } = tp;
             let syn::Path { segments, .. } = path;
-            for s in segments {
-                if s.ident == "Option" {
-                    self.optional.push(field_method_name);
+            let optional = segments.iter().any(|ps| {
+                if &ps.ident.to_string() == "Option" {
+                    true
+                } else {
+                    false
                 }
+            });
+            if optional {
+                self.optional.push(field_method_name);
+            } else {
+                self.mandatory.push(field_method_name);
             }
         }
         visit_mut::visit_field_mut(self, node);
