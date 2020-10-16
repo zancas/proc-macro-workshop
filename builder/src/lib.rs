@@ -49,9 +49,17 @@ pub fn xx(input: TokenStream) -> TokenStream {
     let mut ao = AddOption::new();
     ao.visit_derive_input_mut(&mut derive_input_ast);
     use quote::{format_ident, quote};
-    for mandatory_method in ao.mandatory {
-        quote!(self.#mandatory_method.is_none());
+    let mandatory_fields = &mut String::from("if ");
+    if !ao.mandatory.is_empty() {
+        for mandatory_method in ao.mandatory {
+            mandatory_fields.push_str(&format!("self.{}.is_none() || ", mandatory_method));
+        }
+        let length = mandatory_fields.len() - 3;
+        mandatory_fields.truncate(length);
+        mandatory_fields.push_str(r#"{ return Err(Box::new(String::from("foo"))); }"#);
+        dbg!(&mandatory_fields);
     }
+    let mandatory_field_check = quote!(mandatory_fields);
     let id = derive_input_ast.ident;
     let builderid = format_ident!("{}Builder", &id);
 
@@ -83,13 +91,11 @@ pub fn xx(input: TokenStream) -> TokenStream {
             self.current_dir = Some(current_dir);
             self
         }
+        fn check_mandatory(&self) {
+            #mandatory_field_check
+        }
         fn build(&mut self) -> Result<#id, Box<dyn Error>> {
-            if self.executable.is_none() ||
-               self.args.is_none() ||
-               self.env.is_none() ||
-               self.current_dir.is_none() {
-                return Err(Box::new(String::from("foo")));
-            };
+            self.check_mandatory();
             Ok(
                 #id {
                     executable: self.executable.as_ref().unwrap().clone(),
