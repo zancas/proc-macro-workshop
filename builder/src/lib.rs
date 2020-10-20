@@ -49,17 +49,23 @@ pub fn xx(input: TokenStream) -> TokenStream {
     let mut ao = AddOption::new();
     ao.visit_derive_input_mut(&mut derive_input_ast);
     use quote::{format_ident, quote};
-    let mandatory_fields = &mut String::from("if ");
-    if !ao.mandatory.is_empty() {
-        for mandatory_method in ao.mandatory {
-            mandatory_fields.push_str(&format!("self.{}.is_none() || ", mandatory_method));
+    let mandatory_fields = match ao.mandatory {
+        x if !x.is_empty() => {
+            let temp = &mut String::from("if ");
+            for mandatory_method in x {
+                temp.push_str(&format!("self.{}.is_none() || ", mandatory_method));
+            }
+            let length = temp.len() - 3;
+            temp.truncate(length);
+            temp.push_str(r#"{"#);
+            temp.push_str(r#"  return Err(Box::new(String::from("foo"))); "#);
+            temp.push_str(r#"}"#);
+            temp.push_str(r#" else { return Ok(()); }"#);
+            temp.clone()
         }
-        let length = mandatory_fields.len() - 3;
-        mandatory_fields.truncate(length);
-        mandatory_fields.push_str(r#"{ return Err(Box::new(String::from("foo"))); }"#);
-        dbg!(&mandatory_fields);
-    }
-    let mandatory_field_check = quote!(mandatory_fields);
+        _ => "Ok(())".to_string(),
+    };
+    let mftokens: proc_macro2::TokenStream = mandatory_fields.parse().unwrap();
     let id = derive_input_ast.ident;
     let builderid = format_ident!("{}Builder", &id);
 
@@ -91,8 +97,8 @@ pub fn xx(input: TokenStream) -> TokenStream {
             self.current_dir = Some(current_dir);
             self
         }
-        fn check_mandatory(&self) {
-            #mandatory_field_check
+        fn check_mandatory(&self) -> Result<(), Box<dyn Error>>{
+            #mftokens
         }
         fn build(&mut self) -> Result<#id, Box<dyn Error>> {
             self.check_mandatory();
