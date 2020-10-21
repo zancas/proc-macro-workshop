@@ -40,12 +40,13 @@ impl VisitMut for AddOption {
     }
 }
 
+use syn::parse::{Parse, ParseStream};
+
 #[proc_macro_derive(Builder)]
 pub fn xx(input: TokenStream) -> TokenStream {
     // Input section
     //let tokens = input.clone();
     let mut derive_input_ast = parse_macro_input!(input as DeriveInput);
-    //dbg!(&derive_input_ast);
     let mut ao = AddOption::new();
     ao.visit_derive_input_mut(&mut derive_input_ast);
     use quote::{format_ident, quote};
@@ -81,7 +82,6 @@ pub fn xx(input: TokenStream) -> TokenStream {
         }
         _ => (),
     }
-    dbg!(&setter);
     let mftokens: proc_macro2::TokenStream = mandatory_fields.parse().unwrap();
     let settertokens: proc_macro2::TokenStream = setter.parse().unwrap();
     let id = derive_input_ast.ident;
