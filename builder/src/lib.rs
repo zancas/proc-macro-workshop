@@ -73,7 +73,7 @@ pub fn xx(input: TokenStream) -> TokenStream {
         x if !x.is_empty() => {
             for optional_field in x {
                 setter.push_str(&format!(
-                    "{optional_field}: Some(self.{optional_field}.as_ref().unwrap().clone()),\n",
+                    "{optional_field}: self.{optional_field}.clone(),\n",
                     optional_field = optional_field
                 ));
             }
