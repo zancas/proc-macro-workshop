@@ -63,8 +63,6 @@ pub struct Command {
 }
 
 fn main() {
-    dbg!("hello");
-    /*
     let command = Command::builder()
         .executable("cargo".to_owned())
         .args(vec!["build".to_owned(), "--release".to_owned()])
@@ -81,5 +79,4 @@ fn main() {
         .build()
         .unwrap();
     assert!(command.current_dir.is_some());
-    */
 }

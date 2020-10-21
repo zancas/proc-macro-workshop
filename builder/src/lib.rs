@@ -40,8 +40,6 @@ impl VisitMut for AddOption {
     }
 }
 
-use syn::parse::{Parse, ParseStream};
-
 #[proc_macro_derive(Builder)]
 pub fn xx(input: TokenStream) -> TokenStream {
     // Input section
