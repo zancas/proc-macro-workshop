@@ -49,23 +49,41 @@ pub fn xx(input: TokenStream) -> TokenStream {
     let mut ao = AddOption::new();
     ao.visit_derive_input_mut(&mut derive_input_ast);
     use quote::{format_ident, quote};
+    let setter = &mut String::from("");
     let mandatory_fields = match ao.mandatory {
         x if !x.is_empty() => {
-            let temp = &mut String::from("if ");
-            for mandatory_method in x {
-                temp.push_str(&format!("self.{}.is_none() || ", mandatory_method));
+            let checker = &mut String::from("if ");
+            for required_field in x {
+                checker.push_str(&format!("self.{}.is_none() || ", required_field));
+                setter.push_str(&format!(
+                    "{required_field}: self.{required_field}.as_ref().unwrap().clone(),\n",
+                    required_field = required_field
+                ));
             }
-            let length = temp.len() - 3;
-            temp.truncate(length);
-            temp.push_str(r#"{"#);
-            temp.push_str(r#"  return Err(Box::new(String::from("foo"))); "#);
-            temp.push_str(r#"}"#);
-            temp.push_str(r#" else { return Ok(()); }"#);
-            temp.clone()
+            let length = checker.len() - 3;
+            checker.truncate(length);
+            checker.push_str(r#"{"#);
+            checker.push_str(r#"  return Err(Box::new(String::from("foo"))); "#);
+            checker.push_str(r#"}"#);
+            checker.push_str(r#" else { return Ok(()); }"#);
+            checker.clone()
         }
         _ => "Ok(())".to_string(),
     };
+    match ao.optional {
+        x if !x.is_empty() => {
+            for optional_field in x {
+                setter.push_str(&format!(
+                    "{optional_field}: Some(self.{optional_field}.as_ref().unwrap().clone()),\n",
+                    optional_field = optional_field
+                ));
+            }
+        }
+        _ => (),
+    }
+    dbg!(&setter);
     let mftokens: proc_macro2::TokenStream = mandatory_fields.parse().unwrap();
+    let settertokens: proc_macro2::TokenStream = setter.parse().unwrap();
     let id = derive_input_ast.ident;
     let builderid = format_ident!("{}Builder", &id);
 
@@ -101,13 +119,10 @@ pub fn xx(input: TokenStream) -> TokenStream {
             #mftokens
         }
         fn build(&mut self) -> Result<#id, Box<dyn Error>> {
-            self.check_mandatory();
+            self.check_mandatory()?;
             Ok(
                 #id {
-                    executable: self.executable.as_ref().unwrap().clone(),
-                    args: self.args.as_ref().unwrap().clone(),
-                    env: self.env.as_ref().unwrap().clone(),
-                    current_dir: self.current_dir.as_ref().unwrap().clone(),
+                    #settertokens
             })
         }
     }
