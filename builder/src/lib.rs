@@ -41,18 +41,16 @@ impl VisitMut for AddOption {
 }
 impl VisitMut for EachElementProcessor {
     fn visit_field_mut(&mut self, node: &mut syn::Field) {
-        //let metadata = node.parse_meta().unwrap();
         if !&node.attrs.is_empty() {
             for attr in &node.attrs {
                 if attr.path.get_ident().unwrap() == "builder" {
-                    //dbg!(&attr.path.get_ident().unwrap());
                     let eachfield = node.ident.as_ref().unwrap().clone();
                     if let syn::Meta::List(metalist) = attr.parse_meta().unwrap() {
                         let synmeta = metalist.nested.last().unwrap();
                         //dbg!(&synmeta);
                         match synmeta {
                             syn::NestedMeta::Meta(syn::Meta::NameValue(mnv)) => {
-                                dbg!(&mnv.lit);
+                                self.eachfields.push((eachfield, mnv.lit.clone()));
                                 ()
                             }
                             _ => (),
@@ -60,7 +58,6 @@ impl VisitMut for EachElementProcessor {
                     } else {
                         panic!();
                     }
-                    self.eachfields.push((eachfield, "foo".to_string()));
                 }
             }
         }
@@ -79,7 +76,7 @@ impl VisitMut for EachElementProcessor {
 }
 #[derive(std::fmt::Debug)]
 struct EachElementProcessor {
-    eachfields: Vec<(syn::Ident, String)>,
+    eachfields: Vec<(syn::Ident, syn::Lit)>,
 }
 impl EachElementProcessor {
     pub fn new() -> Self {
@@ -95,7 +92,7 @@ pub fn xx(input: TokenStream) -> TokenStream {
     let mut eep = EachElementProcessor::new();
     eep.visit_derive_input_mut(&mut derive_input_ast);
     ao.visit_derive_input_mut(&mut derive_input_ast);
-    //dbg!(&eep);
+    dbg!(&eep);
     use quote::{format_ident, quote};
     let setter = &mut String::from("");
     let mandatory_fields = match ao.mandatory {
