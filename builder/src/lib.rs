@@ -81,7 +81,8 @@ pub fn xx(input: TokenStream) -> TokenStream {
     let mut eep = EachElementProcessor::new();
     eep.visit_derive_input_mut(&mut derive_input_ast);
     ao.visit_derive_input_mut(&mut derive_input_ast);
-    dbg!(&eep);
+    //dbg!(&eep);
+    dbg!(&eep.eachfields[0].1);
     use quote::{format_ident, quote};
     let setter = &mut String::from("");
     let mandatory_fields = match ao.mandatory {
@@ -119,7 +120,34 @@ pub fn xx(input: TokenStream) -> TokenStream {
     let settertokens: proc_macro2::TokenStream = setter.parse().unwrap();
     let id = derive_input_ast.ident;
     let builderid = format_ident!("{}Builder", &id);
-
+    let methods = quote!(
+    fn executable(&mut self, executable: String) -> &mut Self {
+        self.executable = Some(executable);
+        self
+    }
+    fn args(&mut self, args: Vec<String>) -> &mut Self {
+        self.args = Some(args);
+        self
+    }
+    fn env(&mut self, env: Vec<String>) -> &mut Self {
+        self.env = Some(env);
+        self
+    }
+    fn current_dir(&mut self, current_dir: String) -> &mut Self {
+        self.current_dir = Some(current_dir);
+        self
+    }
+    fn check_mandatory(&self) -> Result<(), Box<dyn Error>>{
+        #mftokens
+    }
+    fn build(&mut self) -> Result<#id, Box<dyn Error>> {
+        self.check_mandatory()?;
+        Ok(
+            #id {
+                #settertokens
+        })
+    }
+    );
     quote!(
     impl #id {
         fn builder() -> #builderid {
@@ -132,32 +160,7 @@ pub fn xx(input: TokenStream) -> TokenStream {
         }
     }
     impl #builderid {
-        fn executable(&mut self, executable: String) -> &mut Self {
-            self.executable = Some(executable);
-            self
-        }
-        fn args(&mut self, args: Vec<String>) -> &mut Self {
-            self.args = Some(args);
-            self
-        }
-        fn env(&mut self, env: Vec<String>) -> &mut Self {
-            self.env = Some(env);
-            self
-        }
-        fn current_dir(&mut self, current_dir: String) -> &mut Self {
-            self.current_dir = Some(current_dir);
-            self
-        }
-        fn check_mandatory(&self) -> Result<(), Box<dyn Error>>{
-            #mftokens
-        }
-        fn build(&mut self) -> Result<#id, Box<dyn Error>> {
-            self.check_mandatory()?;
-            Ok(
-                #id {
-                    #settertokens
-            })
-        }
+        #methods
     }
     trait Error {}
     impl Error for String {}
