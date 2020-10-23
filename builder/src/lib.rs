@@ -39,13 +39,46 @@ impl VisitMut for AddOption {
         visit_mut::visit_field_mut(self, node);
     }
 }
-
-#[proc_macro_derive(Builder)]
+impl VisitMut for EachElementProcessor {
+    fn visit_field_mut(&mut self, node: &mut syn::Field) {
+        //let metadata = node.parse_meta().unwrap();
+        if !&node.attrs.is_empty() {
+            for attr in &node.attrs {
+                if attr.path.get_ident().unwrap() == "builder" {
+                    dbg!(&attr.path.get_ident().unwrap());
+                    self.eachfields.push(node.ident.as_ref().unwrap().clone());
+                }
+            }
+        }
+        /*match &metadata {
+            syn::Meta::List(ml) => {
+                for e in ml.nested.iter() {
+                    let matched = match e {
+                        syn::NestedMeta::Meta(m) => (),
+                        syn::NestedMeta::Lit(l) => (),
+                    };
+                }
+            }
+            _ => panic!(),
+        }*/
+    }
+}
+struct EachElementProcessor {
+    eachfields: Vec<syn::Ident>,
+}
+impl EachElementProcessor {
+    pub fn new() -> Self {
+        EachElementProcessor { eachfields: vec![] }
+    }
+}
+#[proc_macro_derive(Builder, attributes(builder))]
 pub fn xx(input: TokenStream) -> TokenStream {
     // Input section
     //let tokens = input.clone();
     let mut derive_input_ast = parse_macro_input!(input as DeriveInput);
     let mut ao = AddOption::new();
+    let mut eep = EachElementProcessor::new();
+    eep.visit_derive_input_mut(&mut derive_input_ast);
     ao.visit_derive_input_mut(&mut derive_input_ast);
     use quote::{format_ident, quote};
     let setter = &mut String::from("");
