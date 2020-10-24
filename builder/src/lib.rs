@@ -78,7 +78,7 @@ impl EachElementProcessor {
     }
 }
 #[proc_macro_derive(Builder, attributes(builder))]
-pub fn xx(input: TokenStream) -> TokenStream {
+pub fn hello_gygaxis(input: TokenStream) -> TokenStream {
     // Input section
     let mut derive_input_ast = parse_macro_input!(input as DeriveInput);
     let mut ao = AddOption::new();
