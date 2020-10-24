@@ -97,7 +97,6 @@ pub fn hello_gygaxis(input: TokenStream) -> TokenStream {
         });
         methods.push(method_template);
     }
-    dbg!(methods.len());
     use quote::{format_ident, quote};
     let setter = &mut String::from("");
     let mandatory_fields = {
@@ -117,16 +116,11 @@ pub fn hello_gygaxis(input: TokenStream) -> TokenStream {
         checker.push_str(r#" else { return Ok(()); }"#);
         checker.clone()
     };
-    match ao.optional {
-        x if !x.is_empty() => {
-            for optional_field in x {
-                setter.push_str(&format!(
-                    "{optional_field}: self.{optional_field}.clone(),\n",
-                    optional_field = optional_field
-                ));
-            }
-        }
-        _ => (),
+    for optional_field in ao.optional {
+        setter.push_str(&format!(
+            "{optional_field}: self.{optional_field}.clone(),\n",
+            optional_field = optional_field
+        ));
     }
     let mftokens: proc_macro2::TokenStream = mandatory_fields.parse().unwrap();
     let settertokens: proc_macro2::TokenStream = setter.parse().unwrap();
