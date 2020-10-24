@@ -42,22 +42,17 @@ impl VisitMut for AddOption {
 impl VisitMut for EachElementProcessor {
     fn visit_field_mut(&mut self, node: &mut syn::Field) {
         self.allfields.push(node.clone());
-        if !&node.attrs.is_empty() {
-            for attr in &node.attrs {
-                if attr.path.get_ident().unwrap() == "builder" {
-                    let eachfield = node.ident.as_ref().unwrap().clone();
-                    if let syn::Meta::List(metalist) = attr.parse_meta().unwrap() {
-                        let synmeta = metalist.nested.last().unwrap();
-                        //dbg!(&synmeta);
-                        match synmeta {
-                            syn::NestedMeta::Meta(syn::Meta::NameValue(mnv)) => {
-                                self.eachfields.push((eachfield, mnv.lit.clone()));
-                                ()
-                            }
-                            _ => (),
+        for attr in &node.attrs {
+            if attr.path.get_ident().unwrap() == "builder" {
+                let eachfield = node.ident.as_ref().unwrap().clone();
+                if let syn::Meta::List(metalist) = attr.parse_meta().unwrap() {
+                    let synmeta = metalist.nested.last().unwrap();
+                    match synmeta {
+                        syn::NestedMeta::Meta(syn::Meta::NameValue(mnv)) => {
+                            self.eachfields.push((eachfield, mnv.lit.clone()));
+                            ()
                         }
-                    } else {
-                        panic!();
+                        _ => (),
                     }
                 }
             }
@@ -83,8 +78,8 @@ pub fn hello_gygaxis(input: TokenStream) -> TokenStream {
     let mut derive_input_ast = parse_macro_input!(input as DeriveInput);
     let mut ao = AddOption::new();
     let mut eep = EachElementProcessor::new();
-    eep.visit_derive_input_mut(&mut derive_input_ast);
     ao.visit_derive_input_mut(&mut derive_input_ast);
+    eep.visit_derive_input_mut(&mut derive_input_ast);
 
     let mut methods: Vec<proc_macro2::TokenStream> = vec![];
     for fields in &eep.allfields {
@@ -126,7 +121,6 @@ pub fn hello_gygaxis(input: TokenStream) -> TokenStream {
     let settertokens: proc_macro2::TokenStream = setter.parse().unwrap();
     let id = derive_input_ast.ident;
     let builderid = format_ident!("{}Builder", &id);
-    //dbg!(&builderid);
     let methods = quote!(
     fn executable(&mut self, executable: String) -> &mut Self {
         self.executable = Some(executable);
