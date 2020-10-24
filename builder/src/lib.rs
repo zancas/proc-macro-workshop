@@ -85,17 +85,19 @@ pub fn hello_gygaxis(input: TokenStream) -> TokenStream {
     let mut eep = EachElementProcessor::new();
     eep.visit_derive_input_mut(&mut derive_input_ast);
     ao.visit_derive_input_mut(&mut derive_input_ast);
-    dbg!(&eep.allfields[0]);
 
+    let mut methods: Vec<proc_macro2::TokenStream> = vec![];
     for fields in &eep.allfields {
-        let methodname = fields.ident.as_ref().unwrap();
+        let settermethodname = fields.ident.as_ref().unwrap();
         let settertype = fields.ty.clone();
         let method_template = quote!(
-        fn #methodname(&mut self, #methodname: #settertype) -> &mut Self {
-            self.#methodname = Some(#methodname);
+        fn #settermethodname(&mut self, #settermethodname: #settertype) -> &mut Self {
+            self.#settermethodname = Some(#settermethodname);
             self
         });
+        methods.push(method_template);
     }
+    dbg!(methods.len());
     use quote::{format_ident, quote};
     let setter = &mut String::from("");
     let mandatory_fields = {
