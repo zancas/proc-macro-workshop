@@ -81,7 +81,7 @@ pub fn hello_gygaxis(input: TokenStream) -> TokenStream {
     ao.visit_derive_input_mut(&mut derive_input_ast);
     eep.visit_derive_input_mut(&mut derive_input_ast);
 
-    let mut methods: Vec<proc_macro2::TokenStream> = vec![];
+    let mut settermethods: Vec<proc_macro2::TokenStream> = vec![];
     for fields in &eep.allfields {
         let settermethodname = fields.ident.as_ref().unwrap();
         let settertype = fields.ty.clone();
@@ -90,7 +90,7 @@ pub fn hello_gygaxis(input: TokenStream) -> TokenStream {
             self.#settermethodname = Some(#settermethodname);
             self
         });
-        methods.push(method_template);
+        settermethods.push(method_template);
     }
     use quote::{format_ident, quote};
     let setter = &mut String::from("");
@@ -122,7 +122,7 @@ pub fn hello_gygaxis(input: TokenStream) -> TokenStream {
     let id = derive_input_ast.ident;
     let builderid = format_ident!("{}Builder", &id);
     let methods = quote!(
-    #(#methods)*
+    #(#settermethods)*
     fn check_mandatory(&self) -> Result<(), Box<dyn Error>>{
         #mftokens
     }
