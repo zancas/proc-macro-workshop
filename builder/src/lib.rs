@@ -122,22 +122,7 @@ pub fn hello_gygaxis(input: TokenStream) -> TokenStream {
     let id = derive_input_ast.ident;
     let builderid = format_ident!("{}Builder", &id);
     let methods = quote!(
-    fn executable(&mut self, executable: String) -> &mut Self {
-        self.executable = Some(executable);
-        self
-    }
-    fn args(&mut self, args: Vec<String>) -> &mut Self {
-        self.args = Some(args);
-        self
-    }
-    fn env(&mut self, env: Vec<String>) -> &mut Self {
-        self.env = Some(env);
-        self
-    }
-    fn current_dir(&mut self, current_dir: String) -> &mut Self {
-        self.current_dir = Some(current_dir);
-        self
-    }
+    #(#methods)*
     fn check_mandatory(&self) -> Result<(), Box<dyn Error>>{
         #mftokens
     }
