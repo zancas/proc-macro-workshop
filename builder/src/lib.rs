@@ -43,7 +43,6 @@ impl VisitMut for EachElementProcessor {
     fn visit_field_mut(&mut self, node: &mut syn::Field) {
         for attr in &node.attrs {
             if attr.path.get_ident().unwrap() == "builder" {
-                dbg!(&attr.path.get_ident().unwrap());
                 self.eachfields.push(node.ident.as_ref().unwrap().clone());
             }
         }
@@ -69,25 +68,22 @@ pub fn xx(input: TokenStream) -> TokenStream {
     ao.visit_derive_input_mut(&mut derive_input_ast);
     use quote::{format_ident, quote};
     let setter = &mut String::from("");
-    let mandatory_fields = match ao.mandatory {
-        x if !x.is_empty() => {
-            let checker = &mut String::from("if ");
-            for required_field in x {
-                checker.push_str(&format!("self.{}.is_none() || ", required_field));
-                setter.push_str(&format!(
-                    "{required_field}: self.{required_field}.as_ref().unwrap().clone(),\n",
-                    required_field = required_field
-                ));
-            }
-            let length = checker.len() - 3;
-            checker.truncate(length);
-            checker.push_str(r#"{"#);
-            checker.push_str(r#"  return Err(Box::new(String::from("foo"))); "#);
-            checker.push_str(r#"}"#);
-            checker.push_str(r#" else { return Ok(()); }"#);
-            checker.clone()
+    let mandatory_fields = {
+        let checker = &mut String::from("if ");
+        for required_field in ao.mandatory {
+            checker.push_str(&format!("self.{}.is_none() || ", required_field));
+            setter.push_str(&format!(
+                "{required_field}: self.{required_field}.as_ref().unwrap().clone(),\n",
+                required_field = required_field
+            ));
         }
-        _ => "Ok(())".to_string(),
+        let length = checker.len() - 3;
+        checker.truncate(length);
+        checker.push_str(r#"{"#);
+        checker.push_str(r#"  return Err(Box::new(String::from("foo"))); "#);
+        checker.push_str(r#"}"#);
+        checker.push_str(r#" else { return Ok(()); }"#);
+        checker.clone()
     };
     for optional_field in ao.optional {
         setter.push_str(&format!(
