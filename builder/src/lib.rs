@@ -50,17 +50,7 @@ impl VisitMut for EachElementProcessor {
                 }
             }
         }
-        /*match &metadata {
-            syn::Meta::List(ml) => {
-                for e in ml.nested.iter() {
-                    let matched = match e {
-                        syn::NestedMeta::Meta(m) => (),
-                        syn::NestedMeta::Lit(l) => (),
-                    };
-                }
-            }
-            _ => panic!(),
-        }*/
+        visit_mut::visit_field_mut(self, node);
     }
 }
 struct EachElementProcessor {
