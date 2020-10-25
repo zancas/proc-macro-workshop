@@ -41,13 +41,10 @@ impl VisitMut for AddOption {
 }
 impl VisitMut for EachElementProcessor {
     fn visit_field_mut(&mut self, node: &mut syn::Field) {
-        //let metadata = node.parse_meta().unwrap();
-        if !&node.attrs.is_empty() {
-            for attr in &node.attrs {
-                if attr.path.get_ident().unwrap() == "builder" {
-                    dbg!(&attr.path.get_ident().unwrap());
-                    self.eachfields.push(node.ident.as_ref().unwrap().clone());
-                }
+        for attr in &node.attrs {
+            if attr.path.get_ident().unwrap() == "builder" {
+                dbg!(&attr.path.get_ident().unwrap());
+                self.eachfields.push(node.ident.as_ref().unwrap().clone());
             }
         }
         visit_mut::visit_field_mut(self, node);
@@ -92,16 +89,11 @@ pub fn xx(input: TokenStream) -> TokenStream {
         }
         _ => "Ok(())".to_string(),
     };
-    match ao.optional {
-        x if !x.is_empty() => {
-            for optional_field in x {
-                setter.push_str(&format!(
-                    "{optional_field}: self.{optional_field}.clone(),\n",
-                    optional_field = optional_field
-                ));
-            }
-        }
-        _ => (),
+    for optional_field in ao.optional {
+        setter.push_str(&format!(
+            "{optional_field}: self.{optional_field}.clone(),\n",
+            optional_field = optional_field
+        ));
     }
     let mftokens: proc_macro2::TokenStream = mandatory_fields.parse().unwrap();
     let settertokens: proc_macro2::TokenStream = setter.parse().unwrap();
