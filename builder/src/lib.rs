@@ -39,18 +39,30 @@ impl VisitMut for AddOption {
         visit_mut::visit_field_mut(self, node);
     }
 }
+struct EachElementProcessor {
+    eachfields: Vec<(syn::Ident, syn::Lit)>,
+}
 impl VisitMut for EachElementProcessor {
     fn visit_field_mut(&mut self, node: &mut syn::Field) {
         for attr in &node.attrs {
             if attr.path.get_ident().unwrap() == "builder" {
-                self.eachfields.push(node.ident.as_ref().unwrap().clone());
+                use syn::Meta::{List, NameValue};
+                use syn::NestedMeta::Meta;
+                if let List(metalist) = attr.parse_meta().unwrap() {
+                    let synmeta = metalist.nested.last().unwrap();
+                    if let Meta(NameValue(mnv)) = synmeta {
+                        let eachfield = node.ident.as_ref().unwrap().clone();
+                        self.eachfields.push((eachfield, mnv.lit.clone()));
+                    } else {
+                        panic!();
+                    }
+                } else {
+                    panic!();
+                }
             }
         }
         visit_mut::visit_field_mut(self, node);
     }
-}
-struct EachElementProcessor {
-    eachfields: Vec<syn::Ident>,
 }
 impl EachElementProcessor {
     pub fn new() -> Self {
