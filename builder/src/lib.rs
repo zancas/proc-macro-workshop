@@ -40,10 +40,12 @@ impl VisitMut for AddOption {
     }
 }
 struct EachElementProcessor {
+    allfields: Vec<syn::Field>,
     eachfields: Vec<(syn::Ident, syn::Lit)>,
 }
 impl VisitMut for EachElementProcessor {
     fn visit_field_mut(&mut self, node: &mut syn::Field) {
+        self.allfields.push(node.clone());
         for attr in &node.attrs {
             if attr.path.get_ident().unwrap() == "builder" {
                 use syn::Meta::{List, NameValue};
@@ -66,7 +68,10 @@ impl VisitMut for EachElementProcessor {
 }
 impl EachElementProcessor {
     pub fn new() -> Self {
-        EachElementProcessor { eachfields: vec![] }
+        EachElementProcessor {
+            allfields: vec![],
+            eachfields: vec![],
+        }
     }
 }
 #[proc_macro_derive(Builder, attributes(builder))]
