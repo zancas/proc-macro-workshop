@@ -64,25 +64,7 @@ impl BuilderSetterMethodGenerator {
         self.settermethods
             .insert(settermethodname.clone(), method_template);
     }
-}
-impl VisitMut for BuilderSetterMethodGenerator {
-    fn visit_field_mut(&mut self, node: &mut syn::Field) {
-        self.create_optional_and_mandatory(node);
-        self.generate_setter_templates(node);
-        visit_mut::visit_field_mut(self, node);
-    }
-}
-
-struct EachElementExtender {
-    eachfields: Vec<(syn::Ident, syn::Lit)>,
-}
-impl EachElementExtender {
-    fn new() -> Self {
-        EachElementExtender { eachfields: vec![] }
-    }
-}
-impl VisitMut for EachElementExtender {
-    fn visit_field_mut(&mut self, node: &mut syn::Field) {
+    fn elementwise_extend_vectors(&mut self, node: &mut syn::Field) {
         for attr in &node.attrs {
             if attr.path.get_ident().unwrap() == "builder" {
                 use syn::Meta::{List, NameValue};
@@ -100,6 +82,13 @@ impl VisitMut for EachElementExtender {
                 }
             }
         }
+    }
+}
+impl VisitMut for BuilderSetterMethodGenerator {
+    fn visit_field_mut(&mut self, node: &mut syn::Field) {
+        self.create_optional_and_mandatory(node);
+        self.generate_setter_templates(node);
+        self.elementwise_extend_vectors(node);
         visit_mut::visit_field_mut(self, node);
     }
 }
@@ -111,8 +100,6 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
     // Apply Visitors
     let mut builder_settermethod_generator = BuilderSetterMethodGenerator::new();
     builder_settermethod_generator.visit_derive_input_mut(&mut derive_input_ast);
-    let mut each_element_extender = EachElementExtender::new();
-    each_element_extender.visit_derive_input_mut(&mut derive_input_ast);
 
     let setter = &mut String::from("");
     let mandatory_fields = {
