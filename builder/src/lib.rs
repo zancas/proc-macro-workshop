@@ -101,26 +101,15 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
         if let Type::Path(TypePath { path, .. }) = settertype {
             let firstsegment = &path.segments.first().unwrap();
             if firstsegment.ident.to_string() == "Option" {
-                //dbg!(&firstsegment.arguments);
                 use syn::PathArguments;
                 if let PathArguments::AngleBracketed(abe_args) = &firstsegment.arguments {
                     let inner_type = &abe_args.args.first().unwrap();
                     use syn::{GenericArgument, Type};
                     if let GenericArgument::Type(unpacked_type) = inner_type {
                         settertype = unpacked_type.clone();
-                        dbg!(&settertype);
                     }
                 }
             }
-            //dbg!(firstsegment.ident.to_string());
-            /*
-            let argument_type = match &firstsegment {
-                syn::PathSegment {
-                    ident: "Option",
-                    arguments: _,
-                } => dbg!(ident),
-                _ => dbg!("Not an Option!"),
-            };*/
         }
     }
 
