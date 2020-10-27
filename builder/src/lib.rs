@@ -5,7 +5,7 @@ use std::vec::Vec;
 use syn::visit_mut::{self, VisitMut};
 
 struct SetterMethodBuilder {
-    pub(crate) settermethods: Vec<proc_macro2::TokenStream>,
+    settermethods: Vec<proc_macro2::TokenStream>,
 }
 impl SetterMethodBuilder {
     pub fn new() -> Self {
@@ -41,9 +41,9 @@ impl VisitMut for SetterMethodBuilder {
     }
 }
 #[derive(Debug)]
-pub(crate) struct OptionAdder {
-    pub(crate) mandatory: Vec<String>,
-    pub(crate) optional: Vec<String>,
+struct OptionAdder {
+    mandatory: Vec<String>,
+    optional: Vec<String>,
 }
 impl OptionAdder {
     pub fn new() -> Self {
