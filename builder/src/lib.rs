@@ -4,6 +4,20 @@ use syn::{parse_macro_input, DeriveInput};
 use std::vec::Vec;
 use syn::visit_mut::{self, VisitMut};
 
+struct SetterMethodBuilder {
+    allfields: Vec<syn::Field>,
+}
+impl SetterMethodBuilder {
+    pub fn new() -> Self {
+        SetterMethodBuilder { allfields: vec![] }
+    }
+}
+impl VisitMut for SetterMethodBuilder {
+    fn visit_field_mut(&mut self, node: &mut syn::Field) {
+        self.allfields.push(node.clone());
+        visit_mut::visit_field_mut(self, node);
+    }
+}
 #[derive(Debug)]
 pub(crate) struct AddOption {
     pub(crate) mandatory: Vec<String>,
@@ -39,19 +53,19 @@ impl VisitMut for AddOption {
         visit_mut::visit_field_mut(self, node);
     }
 }
-struct SetterMethodBuilder {
+struct EachElementExtender {
     allfields: Vec<syn::Field>,
     eachfields: Vec<(syn::Ident, syn::Lit)>,
 }
-impl SetterMethodBuilder {
+impl EachElementExtender {
     pub fn new() -> Self {
-        SetterMethodBuilder {
+        EachElementExtender {
             allfields: vec![],
             eachfields: vec![],
         }
     }
 }
-impl VisitMut for SetterMethodBuilder {
+impl VisitMut for EachElementExtender {
     fn visit_field_mut(&mut self, node: &mut syn::Field) {
         self.allfields.push(node.clone());
         for attr in &node.attrs {
