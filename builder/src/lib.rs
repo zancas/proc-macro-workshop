@@ -75,14 +75,6 @@ impl EachElementProcessor {
     }
 }
 
-use syn::{Type, TypePath};
-fn get_type_ident_string(ty: Type) -> String {
-    let mut temp = String::from("");
-    if let Type::Path(TypePath { path, .. }) = ty {
-        temp = path.segments.first().unwrap().ident.to_string();
-    }
-    temp
-}
 #[proc_macro_derive(Builder, attributes(builder))]
 pub fn hello_gy(input: TokenStream) -> TokenStream {
     // Input section
@@ -98,7 +90,7 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
     for field in &eep.allfields {
         let settermethodname = field.ident.as_ref().unwrap();
         let mut settertype = field.ty.clone();
-        if let Type::Path(TypePath { path, .. }) = &settertype {
+        if let syn::Type::Path(syn::TypePath { path, .. }) = &settertype {
             let firstsegment = &path.segments.first().unwrap();
             if firstsegment.ident.to_string() == "Option" {
                 use syn::PathArguments;
