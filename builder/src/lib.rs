@@ -31,7 +31,7 @@ impl VisitMut for SetterMethodBuilder {
                 }
             }
         }
-        let method_template = quote!(
+        let method_template = quote::quote!(
         fn #settermethodname(&mut self, #settermethodname: #settertype) -> &mut Self {
             self.#settermethodname = Some(#settermethodname);
             self
@@ -116,10 +116,7 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
     // construct method template
     let mut setter_method_builder = SetterMethodBuilder::new();
     setter_method_builder.visit_derive_input_mut(&mut derive_input_ast);
-    // tokenized representations of setters
-    let mut settermethods: Vec<proc_macro2::TokenStream> = vec![];
 
-    use quote::{format_ident, quote};
     let setter = &mut String::from("");
     let mandatory_fields = {
         let checker = &mut String::from("if ");
@@ -147,9 +144,9 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
     let mftokens: proc_macro2::TokenStream = mandatory_fields.parse().unwrap();
     let settertokens: proc_macro2::TokenStream = setter.parse().unwrap();
     let id = derive_input_ast.ident;
-    let builderid = format_ident!("{}Builder", &id);
-
-    let methods = quote!(
+    let builderid = quote::format_ident!("{}Builder", &id);
+    let settermethods = setter_method_builder.settermethods;
+    let methods = quote::quote!(
     #(#settermethods)*
     fn check_mandatory(&self) -> Result<(), Box<dyn Error>>{
         #mftokens
@@ -161,7 +158,7 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
                 #settertokens
         })
     });
-    quote!(
+    quote::quote!(
     impl #id {
         fn builder() -> #builderid {
             #builderid {
