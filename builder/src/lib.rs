@@ -1,16 +1,17 @@
 use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput};
 
+use std::collections::HashMap;
 use std::vec::Vec;
 use syn::visit_mut::{self, VisitMut};
 
 struct SetterMethodBuilder {
-    settermethods: Vec<proc_macro2::TokenStream>,
+    settermethods: HashMap<syn::Ident, proc_macro2::TokenStream>,
 }
 impl SetterMethodBuilder {
     fn new() -> Self {
         SetterMethodBuilder {
-            settermethods: vec![],
+            settermethods: HashMap::new(),
         }
     }
 }
@@ -36,7 +37,8 @@ impl VisitMut for SetterMethodBuilder {
             self.#settermethodname = Some(#settermethodname);
             self
         });
-        self.settermethods.push(method_template);
+        self.settermethods
+            .insert(settermethodname.clone(), method_template);
         visit_mut::visit_field_mut(self, node);
     }
 }
@@ -146,7 +148,10 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
     let settertokens: proc_macro2::TokenStream = setter.parse().unwrap();
     let id = derive_input_ast.ident;
     let builderid = quote::format_ident!("{}Builder", &id);
-    let settermethods = setter_method_builder.settermethods;
+    let mut settermethods: Vec<proc_macro2::TokenStream> = vec![];
+    for sm in setter_method_builder.settermethods.values() {
+        settermethods.push(sm.clone());
+    }
     let methods = quote::quote!(
     #(#settermethods)*
     fn check_mandatory(&self) -> Result<(), Box<dyn Error>>{
