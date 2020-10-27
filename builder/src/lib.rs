@@ -54,20 +54,15 @@ impl VisitMut for AddOption {
     }
 }
 struct EachElementExtender {
-    allfields: Vec<syn::Field>,
     eachfields: Vec<(syn::Ident, syn::Lit)>,
 }
 impl EachElementExtender {
     pub fn new() -> Self {
-        EachElementExtender {
-            allfields: vec![],
-            eachfields: vec![],
-        }
+        EachElementExtender { eachfields: vec![] }
     }
 }
 impl VisitMut for EachElementExtender {
     fn visit_field_mut(&mut self, node: &mut syn::Field) {
-        self.allfields.push(node.clone());
         for attr in &node.attrs {
             if attr.path.get_ident().unwrap() == "builder" {
                 use syn::Meta::{List, NameValue};
