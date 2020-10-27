@@ -39,11 +39,11 @@ impl VisitMut for AddOption {
         visit_mut::visit_field_mut(self, node);
     }
 }
-struct EachElementProcessor {
+struct BuilderMethodGenerator {
     allfields: Vec<syn::Field>,
     eachfields: Vec<(syn::Ident, syn::Lit)>,
 }
-impl VisitMut for EachElementProcessor {
+impl VisitMut for BuilderMethodGenerator {
     fn visit_field_mut(&mut self, node: &mut syn::Field) {
         self.allfields.push(node.clone());
         for attr in &node.attrs {
@@ -66,9 +66,9 @@ impl VisitMut for EachElementProcessor {
         visit_mut::visit_field_mut(self, node);
     }
 }
-impl EachElementProcessor {
+impl BuilderMethodGenerator {
     pub fn new() -> Self {
-        EachElementProcessor {
+        BuilderMethodGenerator {
             allfields: vec![],
             eachfields: vec![],
         }
@@ -83,11 +83,11 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
     ao.visit_derive_input_mut(&mut derive_input_ast);
 
     // construct method template
-    let mut eep = EachElementProcessor::new();
-    eep.visit_derive_input_mut(&mut derive_input_ast);
+    let mut builder_method_generator = BuilderMethodGenerator::new();
+    builder_method_generator.visit_derive_input_mut(&mut derive_input_ast);
     // tokenized representations of setters
     let mut settermethods: Vec<proc_macro2::TokenStream> = vec![];
-    for field in &eep.allfields {
+    for field in &builder_method_generator.allfields {
         let settermethodname = field.ident.as_ref().unwrap();
         let mut settertype = field.ty.clone();
         if let syn::Type::Path(syn::TypePath { path, .. }) = &settertype {
