@@ -98,7 +98,7 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
     for field in &eep.allfields {
         let settermethodname = field.ident.as_ref().unwrap();
         let mut settertype = field.ty.clone();
-        if let Type::Path(TypePath { path, .. }) = settertype {
+        if let Type::Path(TypePath { path, .. }) = &settertype {
             let firstsegment = &path.segments.first().unwrap();
             if firstsegment.ident.to_string() == "Option" {
                 use syn::PathArguments;
