@@ -94,7 +94,7 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
     let mut eep = EachElementProcessor::new();
     eep.visit_derive_input_mut(&mut derive_input_ast);
     // tokenized representations of setters
-    let mut _settermethods: Vec<proc_macro2::TokenStream> = vec![];
+    let mut settermethods: Vec<proc_macro2::TokenStream> = vec![];
     for field in &eep.allfields {
         let settermethodname = field.ident.as_ref().unwrap();
         let mut settertype = field.ty.clone();
@@ -104,13 +104,19 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
                 use syn::PathArguments;
                 if let PathArguments::AngleBracketed(abe_args) = &firstsegment.arguments {
                     let inner_type = &abe_args.args.first().unwrap();
-                    use syn::{GenericArgument, Type};
+                    use syn::GenericArgument;
                     if let GenericArgument::Type(unpacked_type) = inner_type {
                         settertype = unpacked_type.clone();
                     }
                 }
             }
         }
+        let method_template = quote!(
+        fn #settermethodname(&mut self, #settermethodname: #settertype) -> &mut Self {
+            self.#settermethodname = Some(#settermethodname);
+            self
+        });
+        settermethods.push(method_template);
     }
 
     use quote::{format_ident, quote};
