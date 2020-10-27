@@ -43,19 +43,19 @@ impl VisitMut for SetterMethodBuilder {
     }
 }
 #[derive(Debug)]
-struct OptionAdder {
+struct BuilderSetterMethodGenerator {
     mandatory: Vec<String>,
     optional: Vec<String>,
 }
-impl OptionAdder {
+impl BuilderSetterMethodGenerator {
     fn new() -> Self {
-        OptionAdder {
+        BuilderSetterMethodGenerator {
             mandatory: vec![],
             optional: vec![],
         }
     }
 }
-impl VisitMut for OptionAdder {
+impl VisitMut for BuilderSetterMethodGenerator {
     fn visit_field_mut(&mut self, node: &mut syn::Field) {
         let field_method_name = node.ident.as_ref().unwrap().to_string();
         if let syn::Type::Path(tp) = &node.ty {
@@ -113,8 +113,8 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
     // Input section
     let mut derive_input_ast = parse_macro_input!(input as DeriveInput);
     // Apply Visitors
-    let mut option_adder = OptionAdder::new();
-    option_adder.visit_derive_input_mut(&mut derive_input_ast);
+    let mut builder_settermethod_generator = BuilderSetterMethodGenerator::new();
+    builder_settermethod_generator.visit_derive_input_mut(&mut derive_input_ast);
     let mut setter_method_builder = SetterMethodBuilder::new();
     setter_method_builder.visit_derive_input_mut(&mut derive_input_ast);
     let mut each_element_extender = EachElementExtender::new();
@@ -123,7 +123,7 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
     let setter = &mut String::from("");
     let mandatory_fields = {
         let checker = &mut String::from("if ");
-        for required_field in option_adder.mandatory {
+        for required_field in builder_settermethod_generator.mandatory {
             checker.push_str(&format!("self.{}.is_none() || ", required_field));
             setter.push_str(&format!(
                 "{required_field}: self.{required_field}.as_ref().unwrap().clone(),\n",
@@ -138,7 +138,7 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
         checker.push_str(r#" else { return Ok(()); }"#);
         checker.clone()
     };
-    for optional_field in option_adder.optional {
+    for optional_field in builder_settermethod_generator.optional {
         setter.push_str(&format!(
             "{optional_field}: self.{optional_field}.clone(),\n",
             optional_field = optional_field
