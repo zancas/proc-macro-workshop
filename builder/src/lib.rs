@@ -141,6 +141,18 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
     let id = derive_input_ast.ident;
     let builderid = format_ident!("{}Builder", &id);
 
+    let methods = quote!(
+    #(#settermethods)*
+    fn check_mandatory(&self) -> Result<(), Box<dyn Error>>{
+        #mftokens
+    }
+    fn build(&mut self) -> Result<#id, Box<dyn Error>> {
+        self.check_mandatory()?;
+        Ok(
+            #id {
+                #settertokens
+        })
+    });
     quote!(
     impl #id {
         fn builder() -> #builderid {
@@ -153,17 +165,7 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
         }
     }
     impl #builderid {
-        #(#settermethods)*
-        fn check_mandatory(&self) -> Result<(), Box<dyn Error>>{
-            #mftokens
-        }
-        fn build(&mut self) -> Result<#id, Box<dyn Error>> {
-            self.check_mandatory()?;
-            Ok(
-                #id {
-                    #settertokens
-            })
-        }
+        #methods
     }
     trait Error {}
     impl Error for String {}
