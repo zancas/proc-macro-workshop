@@ -75,14 +75,34 @@ impl EachElementProcessor {
     }
 }
 #[proc_macro_derive(Builder, attributes(builder))]
-pub fn xx(input: TokenStream) -> TokenStream {
+pub fn hello_gy(input: TokenStream) -> TokenStream {
     // Input section
-    //let tokens = input.clone();
     let mut derive_input_ast = parse_macro_input!(input as DeriveInput);
     let mut ao = AddOption::new();
+    ao.visit_derive_input_mut(&mut derive_input_ast);
+
+    // construct method template
     let mut eep = EachElementProcessor::new();
     eep.visit_derive_input_mut(&mut derive_input_ast);
-    ao.visit_derive_input_mut(&mut derive_input_ast);
+    // tokenized representations of setters
+    let mut _settermethods: Vec<proc_macro2::TokenStream> = vec![];
+    for field in &eep.allfields {
+        let settermethodname = field.ident.as_ref().unwrap();
+        let settertype = field.ty.clone();
+        use syn::{Type, TypePath};
+        if let Type::Path(TypePath { path, .. }) = settertype {
+            let firstsegment = &path.segments.first().unwrap();
+            /*
+            let argument_type = match &firstsegment {
+                syn::PathSegment {
+                    ident: "Option",
+                    arguments: _,
+                } => dbg!(ident),
+                _ => dbg!("Not an Option!"),
+            };*/
+        }
+    }
+
     use quote::{format_ident, quote};
     let setter = &mut String::from("");
     let mandatory_fields = {
