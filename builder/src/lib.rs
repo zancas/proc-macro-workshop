@@ -74,6 +74,15 @@ impl EachElementProcessor {
         }
     }
 }
+
+use syn::{Type, TypePath};
+fn get_type_ident_string(ty: Type) -> String {
+    let mut temp = String::from("");
+    if let Type::Path(TypePath { path, .. }) = ty {
+        temp = path.segments.first().unwrap().ident.to_string();
+    }
+    temp
+}
 #[proc_macro_derive(Builder, attributes(builder))]
 pub fn hello_gy(input: TokenStream) -> TokenStream {
     // Input section
@@ -88,10 +97,22 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
     let mut _settermethods: Vec<proc_macro2::TokenStream> = vec![];
     for field in &eep.allfields {
         let settermethodname = field.ident.as_ref().unwrap();
-        let settertype = field.ty.clone();
-        use syn::{Type, TypePath};
+        let mut settertype = field.ty.clone();
         if let Type::Path(TypePath { path, .. }) = settertype {
             let firstsegment = &path.segments.first().unwrap();
+            if firstsegment.ident.to_string() == "Option" {
+                //dbg!(&firstsegment.arguments);
+                use syn::PathArguments;
+                if let PathArguments::AngleBracketed(abe_args) = &firstsegment.arguments {
+                    let inner_type = &abe_args.args.first().unwrap();
+                    use syn::{GenericArgument, Type};
+                    if let GenericArgument::Type(unpacked_type) = inner_type {
+                        settertype = unpacked_type.clone();
+                        dbg!(&settertype);
+                    }
+                }
+            }
+            //dbg!(firstsegment.ident.to_string());
             /*
             let argument_type = match &firstsegment {
                 syn::PathSegment {
