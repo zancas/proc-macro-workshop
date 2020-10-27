@@ -9,12 +9,14 @@ use syn::visit_mut::{self, VisitMut};
 struct BuilderSetterMethodGenerator {
     mandatory: Vec<String>,
     optional: Vec<String>,
+    settermethods: HashMap<syn::Ident, proc_macro2::TokenStream>,
 }
 impl BuilderSetterMethodGenerator {
     fn new() -> Self {
         BuilderSetterMethodGenerator {
             mandatory: vec![],
             optional: vec![],
+            settermethods: HashMap::new(),
         }
     }
     fn create_optional_and_mandatory(&mut self, node: &mut syn::Field) {
@@ -36,26 +38,7 @@ impl BuilderSetterMethodGenerator {
             }
         }
     }
-}
-impl VisitMut for BuilderSetterMethodGenerator {
-    fn visit_field_mut(&mut self, node: &mut syn::Field) {
-        self.create_optional_and_mandatory(node);
-        visit_mut::visit_field_mut(self, node);
-    }
-}
-
-struct SetterMethodBuilder {
-    settermethods: HashMap<syn::Ident, proc_macro2::TokenStream>,
-}
-impl SetterMethodBuilder {
-    fn new() -> Self {
-        SetterMethodBuilder {
-            settermethods: HashMap::new(),
-        }
-    }
-}
-impl VisitMut for SetterMethodBuilder {
-    fn visit_field_mut(&mut self, node: &mut syn::Field) {
+    fn generate_setter_templates(&mut self, node: &mut syn::Field) {
         let settermethodname = node.ident.as_ref().unwrap();
         let mut settertype = node.ty.clone();
         if let syn::Type::Path(syn::TypePath { path, .. }) = &settertype {
@@ -78,9 +61,16 @@ impl VisitMut for SetterMethodBuilder {
         });
         self.settermethods
             .insert(settermethodname.clone(), method_template);
+    }
+}
+impl VisitMut for BuilderSetterMethodGenerator {
+    fn visit_field_mut(&mut self, node: &mut syn::Field) {
+        self.create_optional_and_mandatory(node);
+        self.generate_setter_templates(node);
         visit_mut::visit_field_mut(self, node);
     }
 }
+
 struct EachElementExtender {
     eachfields: Vec<(syn::Ident, syn::Lit)>,
 }
@@ -119,8 +109,8 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
     // Apply Visitors
     let mut builder_settermethod_generator = BuilderSetterMethodGenerator::new();
     builder_settermethod_generator.visit_derive_input_mut(&mut derive_input_ast);
-    let mut setter_method_builder = SetterMethodBuilder::new();
-    setter_method_builder.visit_derive_input_mut(&mut derive_input_ast);
+    //let mut builder_settermethod_generator = SetterMethodBuilder::new();
+    //setter_method_builder.visit_derive_input_mut(&mut derive_input_ast);
     let mut each_element_extender = EachElementExtender::new();
     each_element_extender.visit_derive_input_mut(&mut derive_input_ast);
 
@@ -153,7 +143,7 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
     let id = derive_input_ast.ident;
     let builderid = quote::format_ident!("{}Builder", &id);
     let mut settermethods: Vec<proc_macro2::TokenStream> = vec![];
-    for sm in setter_method_builder.settermethods.values() {
+    for sm in builder_settermethod_generator.settermethods.values() {
         settermethods.push(sm.clone());
     }
     let methods = quote::quote!(
