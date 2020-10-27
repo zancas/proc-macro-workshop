@@ -43,6 +43,14 @@ struct SetterMethodBuilder {
     allfields: Vec<syn::Field>,
     eachfields: Vec<(syn::Ident, syn::Lit)>,
 }
+impl SetterMethodBuilder {
+    pub fn new() -> Self {
+        SetterMethodBuilder {
+            allfields: vec![],
+            eachfields: vec![],
+        }
+    }
+}
 impl VisitMut for SetterMethodBuilder {
     fn visit_field_mut(&mut self, node: &mut syn::Field) {
         self.allfields.push(node.clone());
@@ -64,14 +72,6 @@ impl VisitMut for SetterMethodBuilder {
             }
         }
         visit_mut::visit_field_mut(self, node);
-    }
-}
-impl SetterMethodBuilder {
-    pub fn new() -> Self {
-        SetterMethodBuilder {
-            allfields: vec![],
-            eachfields: vec![],
-        }
     }
 }
 
