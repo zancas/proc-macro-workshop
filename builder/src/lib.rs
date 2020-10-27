@@ -5,6 +5,42 @@ use std::collections::HashMap;
 use std::vec::Vec;
 use syn::visit_mut::{self, VisitMut};
 
+#[derive(Debug)]
+struct BuilderSetterMethodGenerator {
+    mandatory: Vec<String>,
+    optional: Vec<String>,
+}
+impl BuilderSetterMethodGenerator {
+    fn new() -> Self {
+        BuilderSetterMethodGenerator {
+            mandatory: vec![],
+            optional: vec![],
+        }
+    }
+}
+impl VisitMut for BuilderSetterMethodGenerator {
+    fn visit_field_mut(&mut self, node: &mut syn::Field) {
+        let field_method_name = node.ident.as_ref().unwrap().to_string();
+        if let syn::Type::Path(tp) = &node.ty {
+            let syn::TypePath { path, .. } = tp;
+            let syn::Path { segments, .. } = path;
+            let optional = segments.iter().any(|ps| {
+                if &ps.ident.to_string() == "Option" {
+                    true
+                } else {
+                    false
+                }
+            });
+            if optional {
+                self.optional.push(field_method_name);
+            } else {
+                self.mandatory.push(field_method_name);
+            }
+        }
+        visit_mut::visit_field_mut(self, node);
+    }
+}
+
 struct SetterMethodBuilder {
     settermethods: HashMap<syn::Ident, proc_macro2::TokenStream>,
 }
@@ -39,41 +75,6 @@ impl VisitMut for SetterMethodBuilder {
         });
         self.settermethods
             .insert(settermethodname.clone(), method_template);
-        visit_mut::visit_field_mut(self, node);
-    }
-}
-#[derive(Debug)]
-struct BuilderSetterMethodGenerator {
-    mandatory: Vec<String>,
-    optional: Vec<String>,
-}
-impl BuilderSetterMethodGenerator {
-    fn new() -> Self {
-        BuilderSetterMethodGenerator {
-            mandatory: vec![],
-            optional: vec![],
-        }
-    }
-}
-impl VisitMut for BuilderSetterMethodGenerator {
-    fn visit_field_mut(&mut self, node: &mut syn::Field) {
-        let field_method_name = node.ident.as_ref().unwrap().to_string();
-        if let syn::Type::Path(tp) = &node.ty {
-            let syn::TypePath { path, .. } = tp;
-            let syn::Path { segments, .. } = path;
-            let optional = segments.iter().any(|ps| {
-                if &ps.ident.to_string() == "Option" {
-                    true
-                } else {
-                    false
-                }
-            });
-            if optional {
-                self.optional.push(field_method_name);
-            } else {
-                self.mandatory.push(field_method_name);
-            }
-        }
         visit_mut::visit_field_mut(self, node);
     }
 }
