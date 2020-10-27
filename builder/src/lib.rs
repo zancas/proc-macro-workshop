@@ -10,6 +10,7 @@ struct BuilderSetterMethodGenerator {
     mandatory: Vec<String>,
     optional: Vec<String>,
     settermethods: HashMap<syn::Ident, proc_macro2::TokenStream>,
+    eachfields: Vec<(syn::Ident, syn::Lit)>,
 }
 impl BuilderSetterMethodGenerator {
     fn new() -> Self {
@@ -17,6 +18,7 @@ impl BuilderSetterMethodGenerator {
             mandatory: vec![],
             optional: vec![],
             settermethods: HashMap::new(),
+            eachfields: vec![],
         }
     }
     fn create_optional_and_mandatory(&mut self, node: &mut syn::Field) {
@@ -109,8 +111,6 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
     // Apply Visitors
     let mut builder_settermethod_generator = BuilderSetterMethodGenerator::new();
     builder_settermethod_generator.visit_derive_input_mut(&mut derive_input_ast);
-    //let mut builder_settermethod_generator = SetterMethodBuilder::new();
-    //setter_method_builder.visit_derive_input_mut(&mut derive_input_ast);
     let mut each_element_extender = EachElementExtender::new();
     each_element_extender.visit_derive_input_mut(&mut derive_input_ast);
 
