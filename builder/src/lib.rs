@@ -17,9 +17,7 @@ impl BuilderSetterMethodGenerator {
             optional: vec![],
         }
     }
-}
-impl VisitMut for BuilderSetterMethodGenerator {
-    fn visit_field_mut(&mut self, node: &mut syn::Field) {
+    fn create_optional_and_mandatory(&mut self, node: &mut syn::Field) {
         let field_method_name = node.ident.as_ref().unwrap().to_string();
         if let syn::Type::Path(tp) = &node.ty {
             let syn::TypePath { path, .. } = tp;
@@ -37,6 +35,11 @@ impl VisitMut for BuilderSetterMethodGenerator {
                 self.mandatory.push(field_method_name);
             }
         }
+    }
+}
+impl VisitMut for BuilderSetterMethodGenerator {
+    fn visit_field_mut(&mut self, node: &mut syn::Field) {
+        self.create_optional_and_mandatory(node);
         visit_mut::visit_field_mut(self, node);
     }
 }
