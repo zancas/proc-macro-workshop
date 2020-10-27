@@ -8,7 +8,7 @@ struct SetterMethodBuilder {
     settermethods: Vec<proc_macro2::TokenStream>,
 }
 impl SetterMethodBuilder {
-    pub fn new() -> Self {
+    fn new() -> Self {
         SetterMethodBuilder {
             settermethods: vec![],
         }
@@ -46,7 +46,7 @@ struct OptionAdder {
     optional: Vec<String>,
 }
 impl OptionAdder {
-    pub fn new() -> Self {
+    fn new() -> Self {
         OptionAdder {
             mandatory: vec![],
             optional: vec![],
@@ -79,7 +79,7 @@ struct EachElementExtender {
     eachfields: Vec<(syn::Ident, syn::Lit)>,
 }
 impl EachElementExtender {
-    pub fn new() -> Self {
+    fn new() -> Self {
         EachElementExtender { eachfields: vec![] }
     }
 }
@@ -182,7 +182,7 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
         }
     }
 
-    pub struct #builderid {
+    struct #builderid {
         executable: Option<String>,
         args: Option<Vec<String>>,
         env: Option<Vec<String>>,
