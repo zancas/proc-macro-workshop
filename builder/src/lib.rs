@@ -5,16 +5,38 @@ use std::vec::Vec;
 use syn::visit_mut::{self, VisitMut};
 
 struct SetterMethodBuilder {
-    allfields: Vec<syn::Field>,
+    pub(crate) settermethods: Vec<proc_macro2::TokenStream>,
 }
 impl SetterMethodBuilder {
     pub fn new() -> Self {
-        SetterMethodBuilder { allfields: vec![] }
+        SetterMethodBuilder {
+            settermethods: vec![],
+        }
     }
 }
 impl VisitMut for SetterMethodBuilder {
     fn visit_field_mut(&mut self, node: &mut syn::Field) {
-        self.allfields.push(node.clone());
+        let settermethodname = node.ident.as_ref().unwrap();
+        let mut settertype = node.ty.clone();
+        if let syn::Type::Path(syn::TypePath { path, .. }) = &settertype {
+            let firstsegment = &path.segments.first().unwrap();
+            if firstsegment.ident.to_string() == "Option" {
+                use syn::PathArguments;
+                if let PathArguments::AngleBracketed(abe_args) = &firstsegment.arguments {
+                    let inner_type = &abe_args.args.first().unwrap();
+                    use syn::GenericArgument;
+                    if let GenericArgument::Type(unpacked_type) = inner_type {
+                        settertype = unpacked_type.clone();
+                    }
+                }
+            }
+        }
+        let method_template = quote!(
+        fn #settermethodname(&mut self, #settermethodname: #settertype) -> &mut Self {
+            self.#settermethodname = Some(#settermethodname);
+            self
+        });
+        self.settermethods.push(method_template);
         visit_mut::visit_field_mut(self, node);
     }
 }
@@ -96,29 +118,6 @@ pub fn hello_gy(input: TokenStream) -> TokenStream {
     setter_method_builder.visit_derive_input_mut(&mut derive_input_ast);
     // tokenized representations of setters
     let mut settermethods: Vec<proc_macro2::TokenStream> = vec![];
-    for field in &setter_method_builder.allfields {
-        let settermethodname = field.ident.as_ref().unwrap();
-        let mut settertype = field.ty.clone();
-        if let syn::Type::Path(syn::TypePath { path, .. }) = &settertype {
-            let firstsegment = &path.segments.first().unwrap();
-            if firstsegment.ident.to_string() == "Option" {
-                use syn::PathArguments;
-                if let PathArguments::AngleBracketed(abe_args) = &firstsegment.arguments {
-                    let inner_type = &abe_args.args.first().unwrap();
-                    use syn::GenericArgument;
-                    if let GenericArgument::Type(unpacked_type) = inner_type {
-                        settertype = unpacked_type.clone();
-                    }
-                }
-            }
-        }
-        let method_template = quote!(
-        fn #settermethodname(&mut self, #settermethodname: #settertype) -> &mut Self {
-            self.#settermethodname = Some(#settermethodname);
-            self
-        });
-        settermethods.push(method_template);
-    }
 
     use quote::{format_ident, quote};
     let setter = &mut String::from("");
