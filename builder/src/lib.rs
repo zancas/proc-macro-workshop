@@ -7,38 +7,48 @@ use syn::visit_mut::{self, VisitMut};
 
 #[derive(Debug)]
 struct BuilderSetterMethodGenerator {
+    fields: Vec<proc_macro2::TokenStream>,
     mandatory: Vec<String>,
     optional: Vec<String>,
     settermethods: HashMap<syn::Ident, proc_macro2::TokenStream>,
     eachfields: Vec<(syn::Ident, syn::Lit)>,
 }
+use syn::{punctuated::Punctuated, token::Colon2, PathSegment};
 impl BuilderSetterMethodGenerator {
     fn new() -> Self {
         BuilderSetterMethodGenerator {
+            fields: vec![],
             mandatory: vec![],
             optional: vec![],
             settermethods: HashMap::new(),
             eachfields: vec![],
         }
     }
+    fn extract_segments(&mut self, ty: &mut syn::Type) -> Punctuated<PathSegment, Colon2> {
+        use syn::{Type, TypePath};
+        match ty {
+            Type::Path(TypePath { path, .. }) => path.segments.clone(),
+            _ => panic!(),
+        }
+    }
     fn create_optional_and_mandatory(&mut self, node: &mut syn::Field) {
         let field_method_name = node.ident.as_ref().unwrap().to_string();
-        if let syn::Type::Path(tp) = &node.ty {
-            let syn::TypePath { path, .. } = tp;
-            let syn::Path { segments, .. } = path;
-            let optional = segments.iter().any(|ps| {
-                if &ps.ident.to_string() == "Option" {
-                    true
-                } else {
-                    false
-                }
-            });
-            if optional {
-                self.optional.push(field_method_name);
+        let segments = self.extract_segments(&mut node.ty);
+        let optional = segments.iter().any(|ps| {
+            if &ps.ident.to_string() == "Option" {
+                true
             } else {
-                self.mandatory.push(field_method_name);
+                false
             }
+        });
+
+        if optional {
+            self.optional.push(field_method_name);
+        } else {
+            self.mandatory.push(field_method_name);
         }
+        //dbg!(&node.ty);
+        //self.fields.push(quote::quote!(#field_method_name: Option<>));
     }
     fn generate_setter_templates(&mut self, node: &mut syn::Field) {
         let settermethodname = node.ident.as_ref().unwrap();
@@ -72,8 +82,22 @@ impl BuilderSetterMethodGenerator {
                 if let List(metalist) = attr.parse_meta().unwrap() {
                     let synmeta = metalist.nested.last().unwrap();
                     if let Meta(NameValue(mnv)) = synmeta {
-                        let eachfield = node.ident.as_ref().unwrap().clone();
-                        self.eachfields.push((eachfield, mnv.lit.clone()));
+                        if let syn::Lit::Str(lstr) = &mnv.lit {
+                            let litstr = lstr.value();
+                            dbg!(&litstr);
+                            let eachfield = node.ident.as_ref().unwrap().clone();
+                            let settertype = node.ty.clone();
+                            let methnameandarg =
+                                syn::Ident::new(&litstr, proc_macro2::Span::call_site());
+                            dbg!(&methnameandarg);
+
+                            let eachtemplate = quote::quote!(
+                            fn #methnameandarg(&mut self, #methnameandarg: #settertype) -> &mut Self {
+                                self.#methnameandarg.push(#methnameandarg);
+                                self
+                            });
+                            self.settermethods.insert(eachfield, eachtemplate);
+                        }
                     } else {
                         panic!();
                     }
@@ -97,7 +121,7 @@ impl VisitMut for BuilderSetterMethodGenerator {
 pub fn hello_gy(input: TokenStream) -> TokenStream {
     // Input section
     let mut derive_input_ast = parse_macro_input!(input as DeriveInput);
-    // Apply Visitors
+    // Apply Visitor
     let mut builder_settermethod_generator = BuilderSetterMethodGenerator::new();
     builder_settermethod_generator.visit_derive_input_mut(&mut derive_input_ast);
 
