@@ -12,6 +12,7 @@ struct BuilderSetterMethodGenerator {
     optional: Vec<String>,
     settermethods: HashMap<syn::Ident, proc_macro2::TokenStream>,
     eachfields: Vec<(syn::Ident, syn::Lit)>,
+    builderstructfields: Vec<proc_macro2::TokenStream>,
 }
 use syn::{punctuated::Punctuated, token::Colon2, PathSegment};
 impl BuilderSetterMethodGenerator {
@@ -22,7 +23,11 @@ impl BuilderSetterMethodGenerator {
             optional: vec![],
             settermethods: HashMap::new(),
             eachfields: vec![],
+            builderstructfields: vec![],
         }
+    }
+    fn buildbuilder(&mut self, node: &mut syn::Field) {
+        let segments = self.extract_segments(&mut node.ty);
     }
     fn extract_segments(&mut self, ty: &mut syn::Type) -> Punctuated<PathSegment, Colon2> {
         use syn::{Type, TypePath};
@@ -47,8 +52,6 @@ impl BuilderSetterMethodGenerator {
         } else {
             self.mandatory.push(field_method_name);
         }
-        //dbg!(&node.ty);
-        //self.fields.push(quote::quote!(#field_method_name: Option<>));
     }
     fn generate_setter_templates(&mut self, node: &mut syn::Field) {
         let settermethodname = node.ident.as_ref().unwrap();
@@ -110,6 +113,7 @@ impl BuilderSetterMethodGenerator {
 }
 impl VisitMut for BuilderSetterMethodGenerator {
     fn visit_field_mut(&mut self, node: &mut syn::Field) {
+        self.buildbuilder(node);
         self.create_optional_and_mandatory(node);
         self.generate_setter_templates(node);
         self.elementwise_extend_vectors(node);
